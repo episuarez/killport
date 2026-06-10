@@ -52,8 +52,7 @@ fn kill_one(pid: u32, name: &str, mode: KillMode) -> Result<bool, KillError> {
                 for hwnd in &windows {
                     post_close(*hwnd);
                 }
-                let deadline =
-                    std::time::Instant::now() + std::time::Duration::from_millis(1500);
+                let deadline = std::time::Instant::now() + std::time::Duration::from_millis(1500);
                 while std::time::Instant::now() < deadline {
                     if !is_alive(pid) {
                         return Ok(true);
@@ -133,7 +132,10 @@ pub fn kill_tree(pid: u32, mode: KillMode) -> Result<usize, KillError> {
                 debug!(pid = p, name, "killed");
                 killed += 1;
             }
-            Ok(false) => warn!(pid = p, "kill_one returned false; process may still be alive"),
+            Ok(false) => warn!(
+                pid = p,
+                "kill_one returned false; process may still be alive"
+            ),
             Err(e) => debug!(pid = p, err = %e, "kill_one skipped"),
         }
     }
@@ -157,8 +159,7 @@ fn process_creation_time(pid: u32) -> Option<u64> {
         let mut exited = FILETIME::default();
         let mut kernel = FILETIME::default();
         let mut user = FILETIME::default();
-        let ok =
-            GetProcessTimes(handle, &mut created, &mut exited, &mut kernel, &mut user).is_ok();
+        let ok = GetProcessTimes(handle, &mut created, &mut exited, &mut kernel, &mut user).is_ok();
         let _ = CloseHandle(handle);
         if ok {
             Some(((created.dwHighDateTime as u64) << 32) | created.dwLowDateTime as u64)

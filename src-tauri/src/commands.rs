@@ -33,12 +33,19 @@ use crate::actions;
 
 #[tauri::command]
 pub fn list_ports(state: State<'_, Mutex<Config>>) -> Vec<PortProcess> {
-    let ignore = state.lock().unwrap_or_else(|e| e.into_inner()).ignore_ports.clone();
+    let ignore = state
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .ignore_ports
+        .clone();
     let ports = scan();
     if ignore.is_empty() {
         ports
     } else {
-        ports.into_iter().filter(|p| !ignore.contains(&p.port)).collect()
+        ports
+            .into_iter()
+            .filter(|p| !ignore.contains(&p.port))
+            .collect()
     }
 }
 
@@ -160,21 +167,32 @@ pub fn get_qr_code(port: u16) -> Option<QrCodeResult> {
     let url = format!("http://{}:{}", ip, port);
     let code = QrCode::new(url.as_bytes()).ok()?;
     let size = code.width();
-    let cells: Vec<bool> = code.into_colors().into_iter().map(|c| c == QrColor::Dark).collect();
+    let cells: Vec<bool> = code
+        .into_colors()
+        .into_iter()
+        .map(|c| c == QrColor::Dark)
+        .collect();
     Some(QrCodeResult { url, size, cells })
 }
 
 #[tauri::command]
 pub fn kill_ports(pids: Vec<u32>) -> usize {
-    pids.iter().map(|&pid| kill_tree(pid, KillMode::Graceful).unwrap_or(0)).sum()
+    pids.iter()
+        .map(|&pid| kill_tree(pid, KillMode::Graceful).unwrap_or(0))
+        .sum()
 }
 
 #[tauri::command]
 pub fn check_firewall(port: u16) -> FirewallResult {
     let mut builder = std::process::Command::new("netsh");
     builder.args([
-        "advfirewall", "firewall", "show", "rule",
-        "name=all", "dir=in", "protocol=tcp",
+        "advfirewall",
+        "firewall",
+        "show",
+        "rule",
+        "name=all",
+        "dir=in",
+        "protocol=tcp",
         &format!("localport={port}"),
     ]);
     #[cfg(windows)]
@@ -183,13 +201,30 @@ pub fn check_firewall(port: u16) -> FirewallResult {
         builder.creation_flags(0x08000000);
     }
     let Ok(out) = builder.output() else {
-        return FirewallResult { has_allow_rule: false, blocked: false, rule_count: 0 };
+        return FirewallResult {
+            has_allow_rule: false,
+            blocked: false,
+            rule_count: 0,
+        };
     };
     let text = String::from_utf8_lossy(&out.stdout);
     if text.contains("No rules match") {
-        return FirewallResult { has_allow_rule: false, blocked: true, rule_count: 0 };
+        return FirewallResult {
+            has_allow_rule: false,
+            blocked: true,
+            rule_count: 0,
+        };
     }
-    let has_allow = text.lines().any(|l| l.trim().starts_with("Action:") && l.contains("Allow"));
-    let rule_count = text.lines().filter(|l| l.trim().starts_with("Rule Name:")).count();
-    FirewallResult { has_allow_rule: has_allow, blocked: !has_allow, rule_count }
+    let has_allow = text
+        .lines()
+        .any(|l| l.trim().starts_with("Action:") && l.contains("Allow"));
+    let rule_count = text
+        .lines()
+        .filter(|l| l.trim().starts_with("Rule Name:"))
+        .count();
+    FirewallResult {
+        has_allow_rule: has_allow,
+        blocked: !has_allow,
+        rule_count,
+    }
 }

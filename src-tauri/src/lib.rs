@@ -46,16 +46,28 @@ fn reserved_occupied(ports: &[PortProcess], reserved: &[u16]) -> HashSet<u16> {
     if reserved.is_empty() {
         return HashSet::new();
     }
-    ports.iter().filter(|p| reserved.contains(&p.port)).map(|p| p.port).collect()
+    ports
+        .iter()
+        .filter(|p| reserved.contains(&p.port))
+        .map(|p| p.port)
+        .collect()
 }
 
 fn filtered_scan<R: Runtime>(app: &AppHandle<R>) -> Vec<PortProcess> {
-    let ignore = app.state::<Mutex<Config>>().lock().unwrap_or_else(|e| e.into_inner()).ignore_ports.clone();
+    let ignore = app
+        .state::<Mutex<Config>>()
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .ignore_ports
+        .clone();
     let ports = scan_fast();
     if ignore.is_empty() {
         ports
     } else {
-        ports.into_iter().filter(|p| !ignore.contains(&p.port)).collect()
+        ports
+            .into_iter()
+            .filter(|p| !ignore.contains(&p.port))
+            .collect()
     }
 }
 
@@ -64,14 +76,22 @@ fn spawn_poll_loop<R: Runtime>(app: AppHandle<R>, shutdown: Arc<AtomicBool>) {
         let initial = filtered_scan(&app);
         let mut prev = dev_ports(&initial);
         let mut prev_reserved = {
-            let cfg = app.state::<Mutex<Config>>().lock().unwrap_or_else(|e| e.into_inner()).clone();
+            let cfg = app
+                .state::<Mutex<Config>>()
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .clone();
             reserved_occupied(&initial, &cfg.reserved_ports)
         };
         loop {
             if shutdown.load(Ordering::Relaxed) {
                 break;
             }
-            let cfg = app.state::<Mutex<Config>>().lock().unwrap_or_else(|e| e.into_inner()).clone();
+            let cfg = app
+                .state::<Mutex<Config>>()
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .clone();
             std::thread::sleep(Duration::from_secs(cfg.poll_interval_secs.clamp(1, 300)));
 
             let current = filtered_scan(&app);
@@ -86,7 +106,11 @@ fn spawn_poll_loop<R: Runtime>(app: AppHandle<R>, shutdown: Arc<AtomicBool>) {
                     if now && !was {
                         if let Some(p) = current.iter().find(|p| p.port == rp) {
                             let fw = p.framework.as_deref().unwrap_or(&p.kind);
-                            notify::toast(&app, "Puerto reservado ocupado", &format!(":{rp} — {fw} ({})", p.name));
+                            notify::toast(
+                                &app,
+                                "Puerto reservado ocupado",
+                                &format!(":{rp} — {fw} ({})", p.name),
+                            );
                         }
                     } else if !now && was {
                         notify::toast(&app, "Puerto reservado liberado", &format!(":{rp}"));
@@ -108,7 +132,11 @@ fn spawn_poll_loop<R: Runtime>(app: AppHandle<R>, shutdown: Arc<AtomicBool>) {
                     .filter(|p| !p.is_system && p.kind != "unknown" && !prev.contains(&p.port))
                 {
                     let fw = p.framework.as_deref().unwrap_or(&p.kind);
-                    notify::toast(&app, "Puerto abierto", &format!(":{} — {} ({})", p.port, fw, p.name));
+                    notify::toast(
+                        &app,
+                        "Puerto abierto",
+                        &format!(":{} — {} ({})", p.port, fw, p.name),
+                    );
                 }
                 for port in prev.difference(&cur) {
                     notify::toast(&app, "Puerto cerrado", &format!(":{port}"));

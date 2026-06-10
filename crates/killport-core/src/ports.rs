@@ -78,7 +78,8 @@ unsafe fn collect_v4(
         // Clamp dwNumEntries to what physically fits in the buffer to guard against
         // a corrupt or oversized value from the kernel.
         let header_size = std::mem::size_of::<u32>();
-        let max_entries = (size as usize).saturating_sub(header_size) / std::mem::size_of::<MIB_TCPROW_OWNER_PID>();
+        let max_entries = (size as usize).saturating_sub(header_size)
+            / std::mem::size_of::<MIB_TCPROW_OWNER_PID>();
         let count = (table.dwNumEntries as usize).min(max_entries);
         let rows = std::slice::from_raw_parts(table.table.as_ptr(), count);
         for row in rows {
@@ -101,7 +102,8 @@ unsafe fn collect_v6(
 ) {
     use windows::Win32::Foundation::{ERROR_INSUFFICIENT_BUFFER, NO_ERROR};
     use windows::Win32::NetworkManagement::IpHelper::{
-        GetExtendedTcpTable, MIB_TCP6ROW_OWNER_PID, MIB_TCP6TABLE_OWNER_PID, TCP_TABLE_OWNER_PID_ALL,
+        GetExtendedTcpTable, MIB_TCP6ROW_OWNER_PID, MIB_TCP6TABLE_OWNER_PID,
+        TCP_TABLE_OWNER_PID_ALL,
     };
     use windows::Win32::Networking::WinSock::AF_INET6;
 
@@ -138,7 +140,8 @@ unsafe fn collect_v6(
         }
         let table = &*(buf.as_ptr() as *const MIB_TCP6TABLE_OWNER_PID);
         let header_size = std::mem::size_of::<u32>();
-        let max_entries = (size as usize).saturating_sub(header_size) / std::mem::size_of::<MIB_TCP6ROW_OWNER_PID>();
+        let max_entries = (size as usize).saturating_sub(header_size)
+            / std::mem::size_of::<MIB_TCP6ROW_OWNER_PID>();
         let count = (table.dwNumEntries as usize).min(max_entries);
         let rows = std::slice::from_raw_parts(table.table.as_ptr(), count);
         for row in rows {

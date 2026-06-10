@@ -15,9 +15,13 @@ Versioning: [Semantic Versioning](https://semver.org/).
 - GitHub issue templates (bug report, feature request) and PR template with checklist
 - Installer metadata: publisher, copyright, category, short/long description
 
+### Fixed
+- `cargo fmt` applied to 5 pre-existing files (`classify.rs`, `kill.rs`, `probe.rs`, `ports.rs`, `commands.rs`) — CI was failing on format check
+
 ### Changed
 - README: `<div align="center">` layout, bold tagline, `flat-square` badges with logos (CI, release, license, Windows, Rust), feature table, `---` section separators, Install section first
 - `.gitignore`: exclude `src-tauri/gen/schemas/` (auto-generated)
+- CI + Release workflows: opt into Node.js 24 runner via `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`
 
 ## [0.1.1] — 2025-06-10
 

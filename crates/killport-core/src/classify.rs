@@ -30,11 +30,7 @@ pub fn classify(name: &str, cmd: &[String]) -> &'static str {
         return "wsl";
     }
 
-    let is_node = n.contains("node")
-        || has("npm")
-        || has("pnpm")
-        || has("yarn")
-        || has("bun");
+    let is_node = n.contains("node") || has("npm") || has("pnpm") || has("yarn") || has("bun");
 
     if is_node {
         if has("vite") {
@@ -105,7 +101,10 @@ mod tests {
     #[test]
     fn nextdns_is_not_nextjs() {
         assert_eq!(
-            classify("NextDNS.exe", &v(&["C:\\Program Files\\NextDNS\\NextDNS.exe"])),
+            classify(
+                "NextDNS.exe",
+                &v(&["C:\\Program Files\\NextDNS\\NextDNS.exe"])
+            ),
             "unknown"
         );
     }

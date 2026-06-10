@@ -38,7 +38,12 @@ pub async fn probe(port: u16) -> ProbeResult {
     let tcp_latency_ms = t.elapsed().as_millis() as u64;
 
     if !tcp_open {
-        return ProbeResult { port, tcp_open: false, tcp_latency_ms, probes: vec![] };
+        return ProbeResult {
+            port,
+            tcp_open: false,
+            tcp_latency_ms,
+            probes: vec![],
+        };
     }
 
     let client = reqwest::Client::builder()
@@ -124,7 +129,11 @@ async fn probe_ws(port: u16) -> ProbeEntry {
                 status: Some(first_line.clone()),
                 headers: None,
                 latency_ms: t.elapsed().as_millis() as u64,
-                error: if success { None } else { Some("no 101 Switching Protocols".to_string()) },
+                error: if success {
+                    None
+                } else {
+                    Some("no 101 Switching Protocols".to_string())
+                },
             }
         }
         Ok(Err(e)) => proto_error("websocket", e.to_string(), t),
@@ -152,7 +161,11 @@ async fn probe_redis(port: u16) -> ProbeEntry {
                 status: Some(response.trim().chars().take(40).collect()),
                 headers: None,
                 latency_ms: t.elapsed().as_millis() as u64,
-                error: if success { None } else { Some("not a Redis PONG response".to_string()) },
+                error: if success {
+                    None
+                } else {
+                    Some("not a Redis PONG response".to_string())
+                },
             }
         }
         Ok(Err(e)) => proto_error("redis", e.to_string(), t),
@@ -189,7 +202,11 @@ async fn probe_postgres(port: u16) -> ProbeEntry {
                 status: Some(format!("response: 0x{first:02x} ({})", first as char)),
                 headers: None,
                 latency_ms: t.elapsed().as_millis() as u64,
-                error: if success { None } else { Some("unexpected startup response".to_string()) },
+                error: if success {
+                    None
+                } else {
+                    Some("unexpected startup response".to_string())
+                },
             }
         }
         Ok(Ok(_)) => proto_error("postgresql", "empty response".to_string(), t),
@@ -214,7 +231,12 @@ async fn probe_mysql(port: u16) -> ProbeEntry {
             let success = proto_ver == 10 || proto_ver == 9;
             let version = if success {
                 let available = bytes.len() - 5;
-                let end = bytes[5..].iter().position(|&b| b == 0).unwrap_or(available).min(30).min(available);
+                let end = bytes[5..]
+                    .iter()
+                    .position(|&b| b == 0)
+                    .unwrap_or(available)
+                    .min(30)
+                    .min(available);
                 String::from_utf8_lossy(&bytes[5..5 + end]).into_owned()
             } else {
                 String::new()
@@ -229,7 +251,11 @@ async fn probe_mysql(port: u16) -> ProbeEntry {
                 }),
                 headers: None,
                 latency_ms: t.elapsed().as_millis() as u64,
-                error: if success { None } else { Some("unexpected greeting".to_string()) },
+                error: if success {
+                    None
+                } else {
+                    Some("unexpected greeting".to_string())
+                },
             }
         }
         Ok(Ok(_)) => proto_error("mysql", "empty response".to_string(), t),
