@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  --surface-primary: #0D1117;
+  --surface-secondary: #161B22;
+  --surface-overlay: #1C2128;
+  --sidebar: #0A0E14;
+  --border-primary: #30363D;
+  --border-subtle: #21262D;
+  --fg-primary: #E6EDF3;
+  --fg-secondary: #8B949E;
+  --fg-muted: #6E7681;
+  --accent: #58A6FF;
+  --accent-soft: #58a6ff1a;
+  --accent-soft2: #58a6ff33;
+  --destructive: #FF7B72;
+  --tag-node: #7EE787;
+  --tag-python: #79C0FF;
+  --tag-db: #79C0FF;
+  --tag-docker: #56D4F8;
+  --tag-php: #D2A8FF;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-heading: 'Geist', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'Cascadia Code', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background: var(--surface-primary);
+  color: var(--fg-primary);
+  font-family: var(--font-body);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+  user-select: none;
+  cursor: default;
+}
+
+.mono { font-family: var(--font-mono); }
+
+[data-lucide] { stroke-width: 2; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--border-primary); border-radius: 5px; }
+::-webkit-scrollbar-track { background: transparent; }

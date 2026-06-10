@@ -1,0 +1,13 @@
+[package]
+name = "killport-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "killport"
+path = "src/main.rs"
+
+[dependencies]
+killport-core = { path = "../killport-core" }
+anyhow = { workspace = true }

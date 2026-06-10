@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Killport</title>
+    <link rel="stylesheet" href="styles/tokens.css" />
+    <link rel="stylesheet" href="styles/tray.css" />
+  </head>
+  <body>
+    <div class="tray-header">
+      <i data-lucide="zap" class="logo"></i>
+      <div class="titles">
+        <span class="t">Killport</span>
+        <span class="s" id="count">0 puertos activos</span>
+      </div>
+      <button class="icon-btn" id="refresh" title="Refrescar"><i data-lucide="refresh-cw"></i></button>
+    </div>
+
+    <div class="list" id="list"></div>
+
+    <div class="divider"></div>
+    <div class="action" id="act-open">
+      <i data-lucide="scan-search"></i>
+      <div class="at">
+        <span class="al">Abrir panel</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="toggle" id="tog-autostart">
+      <span class="box"><i data-lucide="check"></i></span>
+      <span class="tl">Arrancar al inicio</span>
+    </div>
+    <div class="toggle" id="tog-system">
+      <span class="box"><i data-lucide="check"></i></span>
+      <span class="tl">Mostrar sistema</span>
+    </div>
+
+    <div class="divider"></div>
+    <div class="exit" id="exit">
+      <i data-lucide="log-out"></i>
+      <span>Salir</span>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="scripts/tray.js"></script>
+  </body>
+</html>

@@ -1,0 +1,28 @@
+[package]
+name = "killport-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+thiserror = { workspace = true }
+sysinfo = { workspace = true }
+tracing = "0.1"
+
+[target.'cfg(windows)'.dependencies.winreg]
+version = "0.52"
+
+[target.'cfg(windows)'.dependencies.windows]
+version = "0.59"
+features = [
+    "Win32_Foundation",
+    "Win32_NetworkManagement_IpHelper",
+    "Win32_Networking_WinSock",
+    "Win32_System_Threading",
+    "Win32_System_Services",
+    "Win32_Storage_FileSystem",
+    "Win32_UI_WindowsAndMessaging",
+]

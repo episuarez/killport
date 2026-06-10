@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Killport</title>
+    <link rel="stylesheet" href="styles/tokens.css" />
+    <link rel="stylesheet" href="styles/app.css" />
+  </head>
+  <body>
+    <div class="topbar">
+      <i data-lucide="zap" class="logo"></i>
+      <span class="app-name">Killport</span>
+      <span class="vbadge"><span>v0.1.1</span></span>
+      <div class="spacer"></div>
+      <div class="search">
+        <i data-lucide="search"></i>
+        <input id="search" type="text" placeholder="Buscar... dev" spellcheck="false" />
+      </div>
+      <div class="tb-div"></div>
+      <button class="tb-icon" id="tb-refresh" title="Refrescar"><i data-lucide="refresh-cw"></i></button>
+      <button class="tb-icon" id="tb-dashboard" title="Puertos"><i data-lucide="layout-list"></i></button>
+      <button class="tb-icon" id="tb-settings" title="Ajustes"><i data-lucide="settings"></i></button>
+    </div>
+
+    <div class="body">
+      <div class="sidebar" id="sidebar"></div>
+      <div class="content" id="content"></div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="scripts/app.js"></script>
+  </body>
+</html>
