@@ -1,0 +1,38 @@
+# Build artifacts
+/target
+
+# Rust
+**/*.rs.bk
+*.pdb
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# Claude Code / dev tooling (not part of project)
+.context-mode/
+.code-review-graph/
+.serena/
+.swarm/
+.claude-flow/
+.claude/init-snapshot
+CLAUDE.md.bak
+settings.json.bak
