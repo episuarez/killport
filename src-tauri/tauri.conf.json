@@ -15,6 +15,11 @@
   "bundle": {
     "active": true,
     "targets": ["nsis", "msi"],
+    "publisher": "episuarez",
+    "copyright": "Copyright © 2025 episuarez",
+    "category": "DeveloperTool",
+    "shortDescription": "Kill and manage TCP port processes",
+    "longDescription": "Windows developer tool for managing TCP port processes. List what is listening, kill it, or restart it — with enough context to know what you are hitting.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

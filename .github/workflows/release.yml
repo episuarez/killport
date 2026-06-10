@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check tag matches Cargo.toml version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}" -replace '^v', ''
+          $cargo = Select-String -Path Cargo.toml -Pattern '^version\s*=\s*"(.+)"' |
+            Select-Object -First 1 |
+            ForEach-Object { $_.Matches.Groups[1].Value }
+          if ($tag -ne $cargo) {
+            Write-Error "Tag ${{ github.ref_name }} does not match Cargo.toml version $cargo"
+            exit 1
+          }
+          Write-Host "Version match: $cargo"
+
+  build:
+    needs: verify
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build and bundle
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Killport ${{ github.ref_name }}'
+          releaseBody: |
+            ## Installation
+
+            Download the `.exe` installer (NSIS) or the `.msi` package below.
+
+            Requires Windows 10 version 1803 or later.
+
+            ---
+
+            See [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for what changed.
+          releaseDraft: true
+          prerelease: false
+          includeUpdaterJson: false
