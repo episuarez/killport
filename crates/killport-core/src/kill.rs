@@ -283,7 +283,7 @@ mod tests {
         use std::process::Command;
 
         // Spawn a long-running child we can safely kill in tests.
-        let child = Command::new("ping")
+        let mut child = Command::new("ping")
             .args(["-n", "30", "127.0.0.1"])
             .spawn()
             .expect("failed to spawn ping");
@@ -296,5 +296,7 @@ mod tests {
         );
         // PID should no longer be alive.
         assert!(!is_alive(pid), "process {pid} still alive after kill_tree");
+        // Reap the child to satisfy the OS and avoid clippy's must-use warning.
+        child.wait().ok();
     }
 }

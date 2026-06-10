@@ -1991,7 +1991,6 @@ dependencies = [
 name = "killport-cli"
 version = "0.1.1"
 dependencies = [
- "anyhow",
  "killport-core",
 ]
 

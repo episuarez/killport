@@ -8,7 +8,8 @@ mod notify;
 mod probe;
 
 use std::collections::HashSet;
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use killport_core::{config, scan_fast, Config, PortProcess};
@@ -58,7 +59,7 @@ fn filtered_scan<R: Runtime>(app: &AppHandle<R>) -> Vec<PortProcess> {
     }
 }
 
-fn spawn_poll_loop<R: Runtime>(app: AppHandle<R>) {
+fn spawn_poll_loop<R: Runtime>(app: AppHandle<R>, shutdown: Arc<AtomicBool>) {
     std::thread::spawn(move || {
         let initial = filtered_scan(&app);
         let mut prev = dev_ports(&initial);
@@ -67,8 +68,11 @@ fn spawn_poll_loop<R: Runtime>(app: AppHandle<R>) {
             reserved_occupied(&initial, &cfg.reserved_ports)
         };
         loop {
+            if shutdown.load(Ordering::Relaxed) {
+                break;
+            }
             let cfg = app.state::<Mutex<Config>>().lock().unwrap_or_else(|e| e.into_inner()).clone();
-            std::thread::sleep(Duration::from_secs(cfg.poll_interval_secs.max(1)));
+            std::thread::sleep(Duration::from_secs(cfg.poll_interval_secs.clamp(1, 300)));
 
             let current = filtered_scan(&app);
             let cur = dev_ports(&current);
@@ -181,9 +185,14 @@ pub fn run() {
                 })
                 .build(app)?;
 
-            spawn_poll_loop(handle);
+            let shutdown = Arc::new(AtomicBool::new(false));
+            app.manage(shutdown.clone());
+            spawn_poll_loop(handle, shutdown);
             Ok(())
         })
         .run(tauri::generate_context!())
-        .expect("error while running Killport");
+        .unwrap_or_else(|e| {
+            eprintln!("Killport failed to start: {e}");
+            std::process::exit(1);
+        });
 }

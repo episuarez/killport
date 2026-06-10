@@ -10,4 +10,3 @@ path = "src/main.rs"
 
 [dependencies]
 killport-core = { path = "../killport-core" }
-anyhow = { workspace = true }

@@ -45,11 +45,16 @@ fn restart_cmd(args: &[String]) {
     for p in targets {
         let cmd = p.cmd.clone();
         let cwd = p.cwd.clone();
-        let _ = kill_tree(p.pid, KillMode::Graceful);
+        let pid = p.pid;
+        if let Err(e) = kill_tree(pid, KillMode::Graceful) {
+            eprintln!("restart: kill failed: {e}");
+            std::process::exit(1);
+        }
         if restart(&cmd, cwd.as_deref()) {
-            println!("restarted port {port} (pid {} -> respawned)", p.pid);
+            println!("restarted port {port} (pid {pid} -> respawned)");
         } else {
             eprintln!("restart: failed to respawn (no captured command line?)");
+            std::process::exit(1);
         }
     }
 }

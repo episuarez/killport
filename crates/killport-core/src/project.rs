@@ -7,7 +7,6 @@ use std::path::{Path, PathBuf};
 pub struct Project {
     pub name: String,
     pub path: String,
-    pub marker: &'static str,
 }
 
 const MARKERS: &[&str] = &[
@@ -39,7 +38,6 @@ pub fn detect(cwd: Option<&str>, exe: Option<&str>) -> Option<Project> {
                 return Some(Project {
                     name,
                     path: dir.to_string_lossy().into_owned(),
-                    marker,
                 });
             }
         }

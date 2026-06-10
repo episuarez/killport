@@ -37,7 +37,7 @@ unsafe fn collect_v4(
 ) {
     use windows::Win32::Foundation::{ERROR_INSUFFICIENT_BUFFER, NO_ERROR};
     use windows::Win32::NetworkManagement::IpHelper::{
-        GetExtendedTcpTable, MIB_TCPTABLE_OWNER_PID, TCP_TABLE_OWNER_PID_ALL,
+        GetExtendedTcpTable, MIB_TCPROW_OWNER_PID, MIB_TCPTABLE_OWNER_PID, TCP_TABLE_OWNER_PID_ALL,
     };
     use windows::Win32::Networking::WinSock::AF_INET;
 
@@ -75,7 +75,12 @@ unsafe fn collect_v4(
             return;
         }
         let table = &*(buf.as_ptr() as *const MIB_TCPTABLE_OWNER_PID);
-        let rows = std::slice::from_raw_parts(table.table.as_ptr(), table.dwNumEntries as usize);
+        // Clamp dwNumEntries to what physically fits in the buffer to guard against
+        // a corrupt or oversized value from the kernel.
+        let header_size = std::mem::size_of::<u32>();
+        let max_entries = (size as usize).saturating_sub(header_size) / std::mem::size_of::<MIB_TCPROW_OWNER_PID>();
+        let count = (table.dwNumEntries as usize).min(max_entries);
+        let rows = std::slice::from_raw_parts(table.table.as_ptr(), count);
         for row in rows {
             if row.dwState == MIB_TCP_STATE_LISTEN {
                 let port = ntohs_low(row.dwLocalPort);
@@ -96,7 +101,7 @@ unsafe fn collect_v6(
 ) {
     use windows::Win32::Foundation::{ERROR_INSUFFICIENT_BUFFER, NO_ERROR};
     use windows::Win32::NetworkManagement::IpHelper::{
-        GetExtendedTcpTable, MIB_TCP6TABLE_OWNER_PID, TCP_TABLE_OWNER_PID_ALL,
+        GetExtendedTcpTable, MIB_TCP6ROW_OWNER_PID, MIB_TCP6TABLE_OWNER_PID, TCP_TABLE_OWNER_PID_ALL,
     };
     use windows::Win32::Networking::WinSock::AF_INET6;
 
@@ -132,7 +137,10 @@ unsafe fn collect_v6(
             return;
         }
         let table = &*(buf.as_ptr() as *const MIB_TCP6TABLE_OWNER_PID);
-        let rows = std::slice::from_raw_parts(table.table.as_ptr(), table.dwNumEntries as usize);
+        let header_size = std::mem::size_of::<u32>();
+        let max_entries = (size as usize).saturating_sub(header_size) / std::mem::size_of::<MIB_TCP6ROW_OWNER_PID>();
+        let count = (table.dwNumEntries as usize).min(max_entries);
+        let rows = std::slice::from_raw_parts(table.table.as_ptr(), count);
         for row in rows {
             if row.dwState == MIB_TCP_STATE_LISTEN {
                 let port = ntohs_low(row.dwLocalPort);

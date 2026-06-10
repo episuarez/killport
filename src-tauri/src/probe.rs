@@ -213,7 +213,8 @@ async fn probe_mysql(port: u16) -> ProbeEntry {
             let proto_ver = bytes[4];
             let success = proto_ver == 10 || proto_ver == 9;
             let version = if success {
-                let end = bytes[5..].iter().position(|&b| b == 0).unwrap_or(20).min(30);
+                let available = bytes.len() - 5;
+                let end = bytes[5..].iter().position(|&b| b == 0).unwrap_or(available).min(30).min(available);
                 String::from_utf8_lossy(&bytes[5..5 + end]).into_owned()
             } else {
                 String::new()

@@ -1,19 +1,19 @@
 //! killport-core: pure logic, no UI dependency. Tauri/CLI mount on top.
 
-pub mod appinfo;
+pub(crate) mod appinfo;
 pub mod autostart;
-pub mod classify;
+pub(crate) mod classify;
 pub mod config;
-pub mod docker;
-pub mod framework;
-pub mod guard;
-pub mod kill;
+pub(crate) mod docker;
+pub(crate) mod framework;
+pub(crate) mod guard;
+pub(crate) mod kill;
 pub mod ports;
-pub mod process;
-pub mod project;
-pub mod restart;
-pub mod scan;
-pub mod service;
+pub(crate) mod process;
+pub(crate) mod project;
+pub(crate) mod restart;
+pub(crate) mod scan;
+pub(crate) mod service;
 
 pub use config::Config;
 pub use kill::{kill, kill_tree, KillError, KillMode};

@@ -27,6 +27,9 @@ desktop.ini
 # Logs
 *.log
 
+# Tauri generated schemas (auto-generated)
+src-tauri/gen/schemas/
+
 # Claude Code / dev tooling (not part of project)
 .context-mode/
 .code-review-graph/
@@ -36,3 +39,6 @@ desktop.ini
 .claude/init-snapshot
 CLAUDE.md.bak
 settings.json.bak
+
+# Claude Code tooling
+.claude/init-snapshot.json

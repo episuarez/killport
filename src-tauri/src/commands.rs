@@ -1,7 +1,8 @@
 //! IPC commands exposed to the webview frontends (main window + tray popup).
 //! Thin wrappers over killport-core; all logic stays in core.
 
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 
 use killport_core::{autostart, config, kill_tree, restart, scan, Config, KillMode, PortProcess};
 use qrcode::{Color as QrColor, QrCode};
@@ -142,6 +143,9 @@ pub fn hide_tray(app: AppHandle) {
 
 #[tauri::command]
 pub fn quit_app(app: AppHandle) {
+    if let Some(shutdown) = app.try_state::<Arc<AtomicBool>>() {
+        shutdown.store(true, Ordering::Relaxed);
+    }
     app.exit(0);
 }
 
