@@ -6,6 +6,19 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.2] — 2026-06-10
+
+### Added
+- CONTRIBUTING.md: setup, dev loop, commit conventions, release process
+- Release CI workflow: builds NSIS + MSI installers on `vX.Y.Z` tags, creates draft GitHub Release
+- Screenshots (dashboard + tray popup) in `.github/screenshots/`
+- GitHub issue templates (bug report, feature request) and PR template with checklist
+- Installer metadata: publisher, copyright, category, short/long description
+
+### Changed
+- README: `<div align="center">` layout, bold tagline, `flat-square` badges with logos (CI, release, license, Windows, Rust), feature table, `---` section separators, Install section first
+- `.gitignore`: exclude `src-tauri/gen/schemas/` (auto-generated)
+
 ## [0.1.1] — 2025-06-10
 
 ### Added

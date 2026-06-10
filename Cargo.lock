@@ -1989,14 +1989,14 @@ dependencies = [
 
 [[package]]
 name = "killport-cli"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "killport-core",
 ]
 
 [[package]]
 name = "killport-core"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -2010,7 +2010,7 @@ dependencies = [
 
 [[package]]
 name = "killport-tauri"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "arboard",
  "killport-core",

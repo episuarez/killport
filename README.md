@@ -1,62 +1,82 @@
 # Killport
 
-[![CI](https://github.com/episuarez/killport/actions/workflows/ci.yml/badge.svg)](https://github.com/episuarez/killport/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Windows only](https://img.shields.io/badge/platform-Windows-0078d4)](https://github.com/episuarez/killport/releases)
+<div align="center">
 
-Windows developer tool for managing TCP port processes. See what's listening on a port, kill it, or restart it — with enough context to know exactly what you're hitting.
+<img src=".github/screenshots/dashboard.png" alt="Kill Port dashboard" width="700">
+&nbsp;&nbsp;
+<img src=".github/screenshots/tray.png" alt="System tray popup" width="196">
 
-## Features
+**Kill the process on any port — and know exactly what you're hitting.**
 
-- **Port scan** — all listening TCP ports, IPv4 + IPv6, via Win32 IP Helper API (no `netstat` parsing)
-- **Process context** — runtime (Node, Python, PHP, Go, PostgreSQL, Redis, Docker…), detected framework (Vite, Next.js, Django, Laravel…), project name, parent process
-- **Docker-aware** — maps container ports to their image and name
-- **Windows services** — identifies SCM-registered services
-- **Kill** — graceful (WM_CLOSE → wait → force) or immediate; kills entire process trees
-- **Restart** — kills and respawns with the original command line and working directory
-- **System tray** — lives in the tray; popup list + notifications on port open/close
-- **Desktop dashboard** — full view with protocol probe (HTTP/WS/Redis/MySQL/gRPC…) and QR code for mobile
-- **CLI** — headless `killport` binary for scripting
+[![CI](https://img.shields.io/github/actions/workflow/status/episuarez/killport/ci.yml?style=flat-square&label=CI)](https://github.com/episuarez/killport/actions)
+[![Release](https://img.shields.io/github/v/release/episuarez/killport?style=flat-square&label=release)](https://github.com/episuarez/killport/releases)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-Windows-0078d4?style=flat-square&logo=windows&logoColor=white)](https://github.com/episuarez/killport/releases)
+[![Rust](https://img.shields.io/badge/rust-stable-orange?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org)
+
+</div>
+
+---
 
 ## Install
 
 Download the latest `.exe` installer or `.msi` package from the [Releases](https://github.com/episuarez/killport/releases) page.
 
-Requires **Windows 10 version 1803** or later (WebView2 runtime, ships with Windows since 2018).
+Requires **Windows 10 version 1803** or later (WebView2 runtime, included with Windows since 2018).
+
+---
+
+## What it does
+
+| Feature | Details |
+|---|---|
+| **Port scan** | All listening TCP ports, IPv4 + IPv6, via Win32 IP Helper API — no `netstat` |
+| **Process context** | Runtime (Node, Python, PHP, Go, PostgreSQL, Redis, Docker…) + detected framework (Vite, Next.js, Django, Laravel…) + project name |
+| **Docker-aware** | Maps container ports to their image and name |
+| **Windows services** | Identifies SCM-registered services |
+| **Kill** | Graceful (WM\_CLOSE → wait → force) or immediate; kills entire process trees |
+| **Restart** | Kills and respawns with the original command line and working directory |
+| **System tray** | Popup port list, notifications on port open/close, reserved-port alerts |
+| **Dashboard** | Protocol probe (HTTP/WS/Redis/MySQL/gRPC…), QR code for mobile access |
+| **CLI** | Headless `killport` binary for scripting and automation |
+
+---
 
 ## CLI usage
 
 ```
-killport list                  # show dev ports
+killport list                  # dev ports only
 killport list --all            # include system processes
-killport kill <port>           # kill gracefully
-killport kill <port> --force   # kill immediately
+killport kill <port>           # graceful kill
+killport kill <port> --force   # immediate kill
 killport kill --pid <pid>      # kill by PID
 killport restart <port>        # kill + respawn
 ```
 
+---
+
 ## Build from source
 
 ```bat
-# Prerequisites: Rust stable, cargo-tauri
 rustup update stable
 cargo install tauri-cli
 
 git clone https://github.com/episuarez/killport
 cd killport
 
-# Desktop app
-cargo tauri build
-
-# CLI only
-cargo build -p killport-cli --release
+cargo tauri build              # desktop app + installer
+cargo build -p killport-cli --release   # CLI only
 ```
 
-Binaries end up in `target/release/`.
+Binaries land in `target/release/`.
+
+---
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, commit conventions, and the release process.
+
+---
 
 ## License
 
