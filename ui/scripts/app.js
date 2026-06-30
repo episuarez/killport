@@ -532,6 +532,10 @@ function renderSettings() {
       <div class="set-section"><h3>NOTIFICACIONES</h3>
         ${row('Notificaciones', 'Avisar al abrir o cerrar un puerto', sw('notifications', cfg.notifications))}
       </div>
+      <div class="set-section"><h3>ACTUALIZACIONES</h3>
+        ${row('Versión actual', document.querySelector('.vbadge')?.textContent.trim() || '—', '')}
+        ${row('Buscar actualizaciones', 'Comprueba si hay una versión nueva disponible', `<button class="btn" id="check-update-btn">Buscar</button>`)}
+      </div>
     </div>`;
 
   document.querySelectorAll('.switch').forEach((s) => (s.onclick = async () => {
@@ -566,6 +570,17 @@ function renderSettings() {
   ignore.onchange = () => { cfg.ignore_ports = parsePorts(ignore.value); save(); };
   const reserved = document.getElementById('reserved');
   reserved.onchange = () => { cfg.reserved_ports = parsePorts(reserved.value); save(); };
+
+  const checkBtn = document.getElementById('check-update-btn');
+  if (checkBtn) {
+    checkBtn.onclick = async () => {
+      checkBtn.disabled = true;
+      checkBtn.textContent = 'Buscando...';
+      await checkForUpdates(true);
+      checkBtn.disabled = false;
+      checkBtn.textContent = 'Buscar';
+    };
+  }
 }
 
 // Make role="button"/role="checkbox"/role="switch" divs keyboard-operable (Enter/Space).
@@ -583,7 +598,85 @@ document.getElementById('tb-refresh').onclick = refresh;
 document.getElementById('tb-dashboard').onclick = () => { state.view = 'dashboard'; render(); };
 document.getElementById('tb-settings').onclick = () => { state.view = 'settings'; render(); };
 
+// --- Auto-update ---------------------------------------------------------
+
+function showUpdateModal(meta) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;
+    align-items:center;justify-content:center;z-index:10000`;
+  overlay.innerHTML = `
+    <div style="background:var(--bg-hover);border:1px solid var(--border);border-radius:10px;
+      width:380px;max-width:90vw;padding:20px;box-shadow:0 12px 32px rgba(0,0,0,.4)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <i data-lucide="sparkles" style="color:var(--tag-node)"></i>
+        <h3 style="margin:0;font-size:14px">Nueva versión disponible: v${esc(meta.version)}</h3>
+      </div>
+      <p style="font-size:12px;color:var(--fg-muted);margin-bottom:14px">
+        Tienes v${esc(meta.currentVersion)} instalada.
+      </p>
+      ${meta.body ? `<div style="font-size:12px;color:var(--fg);background:var(--bg);border-radius:6px;
+        padding:8px 10px;max-height:140px;overflow:auto;white-space:pre-wrap;margin-bottom:14px">${esc(meta.body)}</div>` : ''}
+      <div id="update-progress" style="display:none;font-size:11px;color:var(--fg-muted);margin-bottom:10px">
+        Descargando...
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn" id="update-later">Más tarde</button>
+        <button class="btn" id="update-now" style="background:var(--tag-node);color:var(--bg);border:none">
+          Actualizar ahora
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  icons();
+
+  document.getElementById('update-later').onclick = () => overlay.remove();
+
+  document.getElementById('update-now').onclick = async () => {
+    const btn = document.getElementById('update-now');
+    const laterBtn = document.getElementById('update-later');
+    const progress = document.getElementById('update-progress');
+    btn.disabled = true;
+    laterBtn.disabled = true;
+    progress.style.display = 'block';
+    try {
+      const channel = new window.__TAURI__.core.Channel();
+      let received = 0;
+      channel.onmessage = (event) => {
+        if (event.event === 'Progress') {
+          received += event.data.chunkLength;
+          progress.textContent = `Descargando... ${(received / 1024).toFixed(0)} KB`;
+        } else if (event.event === 'Finished') {
+          progress.textContent = 'Instalando...';
+        }
+      };
+      await invoke('plugin:updater|download_and_install', { rid: meta.rid, onEvent: channel });
+      progress.textContent = 'Listo. Reiniciando...';
+      await invoke('plugin:process|restart');
+    } catch (e) {
+      showToast(`actualización: ${esc(String(e))}`);
+      btn.disabled = false;
+      laterBtn.disabled = false;
+      progress.style.display = 'none';
+    }
+  };
+}
+
+async function checkForUpdates(manual = false) {
+  try {
+    const meta = await invoke('plugin:updater|check', {});
+    if (meta) {
+      showUpdateModal(meta);
+    } else if (manual) {
+      showToast('Ya tienes la última versión.', 'ok');
+    }
+  } catch (e) {
+    console.error('update check failed', e);
+    if (manual) showToast(`buscar actualizaciones: ${esc(String(e))}`);
+  }
+}
+
 refresh();
+checkForUpdates();
 let _inFlight = false;
 setInterval(async () => {
   if (_inFlight || state.view !== 'dashboard') return;

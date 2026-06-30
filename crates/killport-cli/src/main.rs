@@ -6,10 +6,11 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let cmd = args.get(1).map(String::as_str).unwrap_or("list");
 
+    let rest = args.get(2..).unwrap_or(&[]);
     match cmd {
-        "list" => list(&args[2..]),
-        "kill" => kill_cmd(&args[2..]),
-        "restart" => restart_cmd(&args[2..]),
+        "list" => list(rest),
+        "kill" => kill_cmd(rest),
+        "restart" => restart_cmd(rest),
         "--help" | "-h" | "help" => {
             println!(
                 "killport {}\n\n\

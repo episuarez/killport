@@ -92,6 +92,7 @@ killed 1 process(es) in tree of pid 18244
 | **Restart** | Kills and respawns with the original command line and working directory |
 | **System tray** | Popup port list, notifications on port open/close, reserved-port alerts |
 | **Dashboard** | Protocol probe (HTTP/WS/Redis/MySQL/gRPC…), firewall rule check, QR code for mobile access |
+| **Auto-update** | Checks for new releases on startup and installs them with one click — no manual reinstall |
 | **CLI** | Headless `killport` binary for scripting and automation |
 
 ---

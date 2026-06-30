@@ -54,3 +54,7 @@ skills-lock.json
 # Local dev tooling / design source (not part of the published project)
 .cargo/
 design/
+
+# Updater signing keypair — private key must never be committed (stored as GH secret)
+.tauri-updater.key
+.tauri-updater.key.pub

@@ -8,7 +8,13 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ## [0.1.3] — 2026-06-30
 
+### Added
+- Auto-update: the app checks GitHub Releases on startup and offers an in-app modal to download and install the new version (`tauri-plugin-updater` + `tauri-plugin-process`)
+- Settings → "Buscar actualizaciones" button for an on-demand update check, separate from the automatic startup check
+- Release CI now signs and publishes the `latest.json` updater manifest alongside the NSIS/MSI installers
+
 ### Fixed
+- Toast notifications (port opened/closed, reserved port occupied) silently failed to show: `tauri-plugin-notification` only sets the Windows AppUserModelID when running the installed app (skipped for anything launched from `target/debug` or `target/release`) and swallows `show()` errors internally. Replaced with a direct `notify-rust` call that always sets the app id and logs failures instead of swallowing them.
 - CLI: `killport` with no subcommand panicked (`args[2..]` on a 1-element argv) instead of listing ports
 - `kill_port`/`kill_ports` IPC commands accepted any PID from the webview with no validation against a live scan
 - `kill_tree` guarded the kill decision on a stale pre-kill snapshot name and skipped its PID-reuse check whenever a creation time was unreadable, instead of failing closed

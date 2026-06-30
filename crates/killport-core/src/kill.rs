@@ -118,16 +118,26 @@ pub fn kill_tree(pid: u32, mode: KillMode) -> Result<usize, KillError> {
     // Reverse => deepest-discovered first, root last.
     let mut killed = 0;
     for p in order.into_iter().rev() {
-        // Skip if this PID was reused by a different process between snapshot and kill.
-        if let (Some(&expected), Some(current)) = (creation_times.get(&p), process_creation_time(p))
-        {
-            if expected != current {
-                warn!(pid = p, "skipping kill: PID reused after snapshot");
+        // Fail closed: only kill a PID whose creation time was captured at snapshot
+        // time AND still matches right now. If either read is unavailable (process
+        // already gone, access denied, or it never resolved at snapshot time), we
+        // cannot prove this PID still refers to the same process, so skip it rather
+        // than risk killing a process that was recycled into this PID since the scan.
+        match (creation_times.get(&p), process_creation_time(p)) {
+            (Some(&expected), Some(current)) if expected == current => {}
+            _ => {
+                warn!(
+                    pid = p,
+                    "skipping kill: PID identity unconfirmed (reused or unreadable)"
+                );
                 continue;
             }
         }
-        let name = snap.get(&p).map(|i| i.name.as_str()).unwrap_or("");
-        match kill_one(p, name, mode) {
+        // Re-resolve the live process name right before killing instead of trusting
+        // the pre-kill snapshot, so the guard check reflects what is actually at
+        // this PID right now.
+        let name = info_for(p).map(|i| i.name).unwrap_or_default();
+        match kill_one(p, &name, mode) {
             Ok(true) => {
                 debug!(pid = p, name, "killed");
                 killed += 1;
@@ -174,9 +184,12 @@ fn process_creation_time(_pid: u32) -> Option<u64> {
     None
 }
 
+/// Returns whether `pid` is still running. Defaults to "alive" when the liveness
+/// check itself is inconclusive (e.g. access denied), so a process we failed to
+/// confirm dead is never mistakenly reported as successfully killed.
 #[cfg(windows)]
 fn is_alive(pid: u32) -> bool {
-    use windows::Win32::Foundation::{CloseHandle, WAIT_TIMEOUT};
+    use windows::Win32::Foundation::{CloseHandle, ERROR_ACCESS_DENIED, WAIT_TIMEOUT};
     use windows::Win32::System::Threading::{
         OpenProcess, WaitForSingleObject, PROCESS_QUERY_LIMITED_INFORMATION,
     };
@@ -187,6 +200,7 @@ fn is_alive(pid: u32) -> bool {
                 let _ = CloseHandle(handle);
                 r == WAIT_TIMEOUT
             }
+            Err(e) if e.code() == ERROR_ACCESS_DENIED.to_hresult() => true,
             _ => false,
         }
     }

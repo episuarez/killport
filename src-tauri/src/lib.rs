@@ -152,7 +152,8 @@ pub fn run() {
     // TODO: add tauri-plugin-log with APPDATA\Killport\logs appender and wire
     // the tracing subscriber here so kill/config spans are persisted to disk.
     tauri::Builder::default()
-        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .manage(Mutex::new(config::load()))
         .invoke_handler(tauri::generate_handler![
             commands::list_ports,

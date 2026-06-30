@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "Capabilities for the main and tray windows",
   "windows": ["main", "tray"],
-  "permissions": ["core:default", "notification:default"]
+  "permissions": ["core:default", "updater:default", "process:allow-restart"]
 }

@@ -18,7 +18,13 @@ const PROTECTED: &[&str] = &[
 ];
 
 pub fn is_protected(name: &str) -> bool {
-    let n = name.to_lowercase();
+    // Normalize to the basename so a full path (or any other variant a caller
+    // might pass) can't slip past the guard the way a bare process name would not.
+    let base = std::path::Path::new(name)
+        .file_name()
+        .map(|f| f.to_string_lossy().into_owned())
+        .unwrap_or_else(|| name.to_string());
+    let n = base.to_lowercase();
     PROTECTED
         .iter()
         .any(|p| n == *p || n == p.trim_end_matches(".exe"))
@@ -39,5 +45,11 @@ mod tests {
     fn allows_dev_processes() {
         assert!(!is_protected("node.exe"));
         assert!(!is_protected("python.exe"));
+    }
+
+    #[test]
+    fn protects_full_paths_by_basename() {
+        assert!(is_protected(r"C:\Windows\System32\lsass.exe"));
+        assert!(is_protected(r"C:\Windows\System32\SVCHOST.EXE"));
     }
 }
