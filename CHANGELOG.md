@@ -6,6 +6,26 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.3] — 2026-06-30
+
+### Fixed
+- CLI: `killport` with no subcommand panicked (`args[2..]` on a 1-element argv) instead of listing ports
+- `kill_port`/`kill_ports` IPC commands accepted any PID from the webview with no validation against a live scan
+- `kill_tree` guarded the kill decision on a stale pre-kill snapshot name and skipped its PID-reuse check whenever a creation time was unreadable, instead of failing closed
+- `is_alive` reported a process as dead when `OpenProcess` was merely access-denied, causing false "killed" results
+- `guard::is_protected` matched only a bare process name, so a full path could in principle slip past the protected-process list
+- `set_config` deduped `ignore_ports` without sorting first, so non-consecutive duplicates survived
+- `restart_port` respawned even when the prior kill failed, risking a duplicate process on the same port
+- UI: `unpkg.com` CDN script for Lucide icons conflicted with the `script-src 'self'` CSP (icons silently failed to load) and pulled unpinned third-party code into a privileged webview — vendored locally instead
+- UI: stale PIDs lingered in the multi-select set after a process exited
+- UI: `open_url`/`copy_url`/`open_folder` bypassed the error-handling wrapper used by the other actions
+- UI: a config write could be clobbered by a refresh landing mid-flight
+- UI: keyboard accessibility for custom button/toggle controls, ARIA labels, and a live region for toasts
+
+### Changed
+- `list_ports`, `kill_port`, `kill_ports`, `restart_port`, `check_firewall`, `get_qr_code` IPC commands moved off the main thread (`spawn_blocking`) so a slow scan or `netsh` call no longer freezes the UI
+- `kill_port`/`kill_ports`/`restart_port` now surface kill/restart failures to the frontend instead of silently returning 0/false
+
 ## [0.1.2] — 2026-06-10
 
 ### Added

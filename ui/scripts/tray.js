@@ -24,16 +24,24 @@ function devFilter(p) {
 }
 
 async function load() {
-  cfg = await invoke('get_config');
-  const autostart = await invoke('get_autostart');
-  const ports = (await invoke('list_ports')).filter(devFilter);
+  const list = document.getElementById('list');
+  let cfgResult, autostart, ports;
+  try {
+    [cfgResult, autostart, ports] = await Promise.all([
+      invoke('get_config'),
+      invoke('get_autostart'),
+      invoke('list_ports'),
+    ]);
+  } catch (e) {
+    list.innerHTML = `<div class="empty-mini">Error: ${esc(String(e))}</div>`;
+    return;
+  }
+  cfg = cfgResult;
+  ports = ports.filter(devFilter);
 
   document.getElementById('count').textContent =
     `${ports.length} puerto${ports.length === 1 ? '' : 's'} activo${ports.length === 1 ? '' : 's'}`;
-  const openSub = document.getElementById('open-sub');
-  if (openSub) openSub.textContent = ports[0] ? `:${ports[0].port}` : 'Killport';
 
-  const list = document.getElementById('list');
   if (ports.length === 0) {
     list.innerHTML = '<div class="empty-mini">No hay puertos dev activos</div>';
   } else {
@@ -45,8 +53,8 @@ async function load() {
         <div class="port-row" data-pid="${p.pid}" data-port="${p.port}">
           <span class="dot" style="background:${dotColor(p.kind)}"></span>
           <div class="info">
-            <span class="pp">${escape(label)}</span>
-            <span class="pj">${escape(proj)}</span>
+            <span class="pp">${esc(label)}</span>
+            <span class="pj">${esc(proj)}</span>
           </div>
           <div class="acts">
             <span class="a kill" title="Matar proceso"><i data-lucide="x"></i></span>
@@ -64,8 +72,8 @@ async function load() {
   bindRows();
 }
 
-function escape(s) {
-  return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 function setToggle(id, on) {
@@ -77,26 +85,26 @@ function bindRows() {
     const pid = Number(row.dataset.pid);
     row.querySelector('.kill').onclick = async (e) => {
       e.stopPropagation();
-      await invoke('kill_port', { pid });
+      try { await invoke('kill_port', { pid }); } catch (_) {}
       load();
     };
-    row.querySelector('.open').onclick = (e) => { e.stopPropagation(); invoke('open_main'); };
-    row.onclick = () => invoke('open_main');
+    row.querySelector('.open').onclick = (e) => { e.stopPropagation(); invoke('open_main').catch(() => {}); };
+    row.onclick = () => invoke('open_main').catch(() => {});
   });
 }
 
 document.getElementById('refresh').onclick = load;
-document.getElementById('act-open').onclick = () => invoke('open_main');
-document.getElementById('exit').onclick = () => invoke('quit_app');
+document.getElementById('act-open').onclick = () => invoke('open_main').catch(() => {});
+document.getElementById('exit').onclick = () => invoke('quit_app').catch(() => {});
 
 document.getElementById('tog-autostart').onclick = async () => {
   const next = !document.getElementById('tog-autostart').classList.contains('on');
-  await invoke('set_autostart', { enabled: next });
+  try { await invoke('set_autostart', { enabled: next }); } catch (_) {}
   load();
 };
 document.getElementById('tog-system').onclick = async () => {
   cfg.show_system = !cfg.show_system;
-  await invoke('set_config', { cfg });
+  try { await invoke('set_config', { cfg }); } catch (_) { cfg.show_system = !cfg.show_system; }
   load();
 };
 

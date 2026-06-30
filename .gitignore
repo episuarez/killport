@@ -42,3 +42,15 @@ settings.json.bak
 
 # Claude Code tooling
 .claude/init-snapshot.json
+
+# Claude Code tooling
+CLAUDE.md.*.bak
+.codebase-memory/
+.claude/
+.agents/
+CLAUDE.md
+skills-lock.json
+
+# Local dev tooling / design source (not part of the published project)
+.cargo/
+design/

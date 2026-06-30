@@ -32,37 +32,54 @@ fn local_ip() -> Option<String> {
 use crate::actions;
 
 #[tauri::command]
-pub fn list_ports(state: State<'_, Mutex<Config>>) -> Vec<PortProcess> {
+pub async fn list_ports(state: State<'_, Mutex<Config>>) -> Result<Vec<PortProcess>, ()> {
     let ignore = state
         .lock()
         .unwrap_or_else(|e| e.into_inner())
         .ignore_ports
         .clone();
-    let ports = scan();
-    if ignore.is_empty() {
+    let ports = tauri::async_runtime::spawn_blocking(scan)
+        .await
+        .unwrap_or_default();
+    Ok(if ignore.is_empty() {
         ports
     } else {
         ports
             .into_iter()
             .filter(|p| !ignore.contains(&p.port))
             .collect()
+    })
+}
+
+#[tauri::command]
+pub async fn kill_port(pid: u32) -> Result<usize, String> {
+    tauri::async_runtime::spawn_blocking(move || kill_validated(pid))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// Kill `pid` only if it is present in a fresh scan, to prevent the webview
+/// from terminating arbitrary processes via an unvalidated PID.
+fn kill_validated(pid: u32) -> Result<usize, String> {
+    if !scan().iter().any(|p| p.pid == pid) {
+        return Err(format!("PID {pid} is not a known listening process"));
     }
+    kill_tree(pid, KillMode::Graceful).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn kill_port(pid: u32) -> usize {
-    kill_tree(pid, KillMode::Graceful).unwrap_or(0)
-}
-
-#[tauri::command]
-pub fn restart_port(pid: u32) -> bool {
-    let Some(p) = scan().into_iter().find(|p| p.pid == pid) else {
-        return false;
-    };
-    let cmd = p.cmd.clone();
-    let cwd = p.cwd.clone();
-    let _ = kill_tree(pid, KillMode::Graceful);
-    restart(&cmd, cwd.as_deref())
+pub async fn restart_port(pid: u32) -> Result<bool, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let Some(p) = scan().into_iter().find(|p| p.pid == pid) else {
+            return Err(format!("PID {pid} is not a known listening process"));
+        };
+        let cmd = p.cmd.clone();
+        let cwd = p.cwd.clone();
+        kill_tree(pid, KillMode::Graceful).map_err(|e| e.to_string())?;
+        Ok(restart(&cmd, cwd.as_deref()))
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -104,8 +121,9 @@ pub fn get_config(state: State<'_, Mutex<Config>>) -> Config {
 pub fn set_config(state: State<'_, Mutex<Config>>, mut cfg: Config) {
     {
         let mut guard = state.lock().unwrap_or_else(|e| e.into_inner());
-        // Reject port 0; dedup in case frontend sent duplicates.
+        // Reject port 0; sort + dedup in case frontend sent duplicates.
         cfg.ignore_ports.retain(|&p| p > 0);
+        cfg.ignore_ports.sort_unstable();
         cfg.ignore_ports.dedup();
         *guard = cfg.clone();
     }
@@ -162,69 +180,86 @@ pub async fn probe_port(port: u16) -> crate::probe::ProbeResult {
 }
 
 #[tauri::command]
-pub fn get_qr_code(port: u16) -> Option<QrCodeResult> {
-    let ip = local_ip()?;
-    let url = format!("http://{}:{}", ip, port);
-    let code = QrCode::new(url.as_bytes()).ok()?;
-    let size = code.width();
-    let cells: Vec<bool> = code
-        .into_colors()
-        .into_iter()
-        .map(|c| c == QrColor::Dark)
-        .collect();
-    Some(QrCodeResult { url, size, cells })
+pub async fn get_qr_code(port: u16) -> Option<QrCodeResult> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let ip = local_ip()?;
+        let url = format!("http://{}:{}", ip, port);
+        let code = QrCode::new(url.as_bytes()).ok()?;
+        let size = code.width();
+        let cells: Vec<bool> = code
+            .into_colors()
+            .into_iter()
+            .map(|c| c == QrColor::Dark)
+            .collect();
+        Some(QrCodeResult { url, size, cells })
+    })
+    .await
+    .ok()
+    .flatten()
 }
 
 #[tauri::command]
-pub fn kill_ports(pids: Vec<u32>) -> usize {
-    pids.iter()
-        .map(|&pid| kill_tree(pid, KillMode::Graceful).unwrap_or(0))
-        .sum()
+pub async fn kill_ports(pids: Vec<u32>) -> Result<usize, ()> {
+    tauri::async_runtime::spawn_blocking(move || {
+        pids.iter()
+            .map(|&pid| kill_validated(pid).unwrap_or(0))
+            .sum()
+    })
+    .await
+    .map_err(|_| ())
 }
 
 #[tauri::command]
-pub fn check_firewall(port: u16) -> FirewallResult {
-    let mut builder = std::process::Command::new("netsh");
-    builder.args([
-        "advfirewall",
-        "firewall",
-        "show",
-        "rule",
-        "name=all",
-        "dir=in",
-        "protocol=tcp",
-        &format!("localport={port}"),
-    ]);
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        builder.creation_flags(0x08000000);
-    }
-    let Ok(out) = builder.output() else {
-        return FirewallResult {
-            has_allow_rule: false,
-            blocked: false,
-            rule_count: 0,
+pub async fn check_firewall(port: u16) -> FirewallResult {
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut builder = std::process::Command::new("netsh");
+        builder.args([
+            "advfirewall",
+            "firewall",
+            "show",
+            "rule",
+            "name=all",
+            "dir=in",
+            "protocol=tcp",
+            &format!("localport={port}"),
+        ]);
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            builder.creation_flags(0x08000000);
+        }
+        let Ok(out) = builder.output() else {
+            return FirewallResult {
+                has_allow_rule: false,
+                blocked: false,
+                rule_count: 0,
+            };
         };
-    };
-    let text = String::from_utf8_lossy(&out.stdout);
-    if text.contains("No rules match") {
-        return FirewallResult {
-            has_allow_rule: false,
-            blocked: true,
-            rule_count: 0,
-        };
-    }
-    let has_allow = text
-        .lines()
-        .any(|l| l.trim().starts_with("Action:") && l.contains("Allow"));
-    let rule_count = text
-        .lines()
-        .filter(|l| l.trim().starts_with("Rule Name:"))
-        .count();
-    FirewallResult {
-        has_allow_rule: has_allow,
-        blocked: !has_allow,
-        rule_count,
-    }
+        let text = String::from_utf8_lossy(&out.stdout);
+        if text.contains("No rules match") {
+            return FirewallResult {
+                has_allow_rule: false,
+                blocked: true,
+                rule_count: 0,
+            };
+        }
+        let has_allow = text
+            .lines()
+            .any(|l| l.trim().starts_with("Action:") && l.contains("Allow"));
+        let rule_count = text
+            .lines()
+            .filter(|l| l.trim().starts_with("Rule Name:"))
+            .count();
+        FirewallResult {
+            has_allow_rule: has_allow,
+            blocked: !has_allow,
+            rule_count,
+        }
+    })
+    .await
+    .unwrap_or(FirewallResult {
+        has_allow_rule: false,
+        blocked: false,
+        rule_count: 0,
+    })
 }

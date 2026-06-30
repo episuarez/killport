@@ -1,0 +1,65 @@
+<svg width="560" height="260" viewBox="0 0 560 260" xmlns="http://www.w3.org/2000/svg" font-family="Consolas, 'Cascadia Code', 'Courier New', monospace" font-size="14">
+  <defs>
+    <clipPath id="clip-l0"><rect x="20" y="0" width="0" height="20"><animate attributeName="width" from="0" to="175" dur="0.45s" begin="0.2s" fill="freeze"/></rect></clipPath>
+    <clipPath id="clip-l1"><rect x="20" y="0" width="0" height="20"><animate attributeName="width" from="0" to="330" dur="0.4s" begin="0.75s" fill="freeze"/></rect></clipPath>
+    <clipPath id="clip-l2"><rect x="20" y="0" width="0" height="20"><animate attributeName="width" from="0" to="440" dur="0.5s" begin="1.25s" fill="freeze"/></rect></clipPath>
+    <clipPath id="clip-l3"><rect x="20" y="0" width="0" height="20"><animate attributeName="width" from="0" to="500" dur="0.55s" begin="1.85s" fill="freeze"/></rect></clipPath>
+    <clipPath id="clip-l5"><rect x="20" y="0" width="0" height="20"><animate attributeName="width" from="0" to="215" dur="0.35s" begin="2.9s" fill="freeze"/></rect></clipPath>
+    <clipPath id="clip-l6"><rect x="20" y="0" width="0" height="20"><animate attributeName="width" from="0" to="410" dur="0.5s" begin="3.35s" fill="freeze"/></rect></clipPath>
+    <clipPath id="clip-l7"><rect x="20" y="0" width="0" height="20"><animate attributeName="width" from="0" to="40" dur="0.2s" begin="3.95s" fill="freeze"/></rect></clipPath>
+  </defs>
+
+  <!-- window -->
+  <rect x="0.5" y="0.5" width="559" height="259" rx="10" fill="#0D1117" stroke="#30363D"/>
+  <path d="M0.5 30 L0.5 10 A9.5 9.5 0 0 1 10 0.5 L550 0.5 A9.5 9.5 0 0 1 559.5 10 L559.5 30 Z" fill="#161B22"/>
+  <line x1="0.5" y1="30" x2="559.5" y2="30" stroke="#30363D"/>
+  <circle cx="20" cy="15" r="5.5" fill="#FF5F56"/>
+  <circle cx="38" cy="15" r="5.5" fill="#FFBD2E"/>
+  <circle cx="56" cy="15" r="5.5" fill="#27C93F"/>
+  <text x="280" y="19" text-anchor="middle" fill="#8B949E" font-size="12">killport — CLI</text>
+
+  <!-- live scan pulse -->
+  <circle cx="538" cy="15" r="4" fill="#7EE787">
+    <animate attributeName="opacity" values="1;0.25;1" dur="1.6s" begin="0s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- line 0: prompt + command -->
+  <g clip-path="url(#clip-l0)">
+    <text x="20" y="55" fill="#58A6FF">C:\&gt;<tspan fill="#E6EDF3"> killport list</tspan></text>
+  </g>
+
+  <!-- line 1: header -->
+  <g clip-path="url(#clip-l1)">
+    <text x="20" y="79" fill="#6E7681">PORT   PID     KIND        ORIGIN</text>
+  </g>
+
+  <!-- line 2 -->
+  <g clip-path="url(#clip-l2)">
+    <text x="20" y="103" fill="#E6EDF3">3000   18244   <tspan fill="#7EE787">node</tspan>       npm run dev</text>
+  </g>
+
+  <!-- line 3 -->
+  <g clip-path="url(#clip-l3)">
+    <text x="20" y="127" fill="#E6EDF3">5432   9001    <tspan fill="#79C0FF">postgres</tspan>   service: postgresql-x64-16</text>
+  </g>
+
+  <!-- line 5: prompt + kill command -->
+  <g clip-path="url(#clip-l5)">
+    <text x="20" y="175" fill="#58A6FF">C:\&gt;<tspan fill="#E6EDF3"> killport kill 3000</tspan></text>
+  </g>
+
+  <!-- line 6: result -->
+  <g clip-path="url(#clip-l6)">
+    <text x="20" y="199" fill="#7EE787">✓ killed 1 process(es) in tree of pid 18244</text>
+  </g>
+
+  <!-- line 7: final prompt -->
+  <g clip-path="url(#clip-l7)">
+    <text x="20" y="223" fill="#58A6FF">C:\&gt;</text>
+  </g>
+
+  <!-- blinking cursor -->
+  <rect x="54" y="210" width="8" height="15" fill="#58A6FF">
+    <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.5;0.5;1" dur="1s" begin="4.2s" repeatCount="indefinite"/>
+  </rect>
+</svg>

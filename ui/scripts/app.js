@@ -16,11 +16,13 @@ const CATS = [
 ];
 const dotColor = (k) => KIND_DOT[k] || 'var(--fg-muted)';
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
-const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const icons = () => window.lucide && window.lucide.createIcons();
 
 function showToast(msg, type = 'error') {
   const t = document.createElement('div');
+  t.setAttribute('role', 'alert');
+  t.setAttribute('aria-live', 'polite');
   t.style.cssText = `position:fixed;bottom:16px;right:16px;background:var(--bg-hover);border:1px solid var(--border);
     border-left:3px solid ${type === 'error' ? 'var(--c-danger, #e55)' : 'var(--tag-node)'};
     color:var(--fg);padding:8px 12px;border-radius:6px;font-size:12px;max-width:320px;
@@ -28,6 +30,15 @@ function showToast(msg, type = 'error') {
   t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 4000);
+}
+
+async function setConfig(cfg) {
+  cfgWritesInFlight++;
+  try {
+    await cmd('set_config', { cfg });
+  } finally {
+    cfgWritesInFlight--;
+  }
 }
 
 async function cmd(name, args = {}) {
@@ -40,6 +51,7 @@ async function cmd(name, args = {}) {
 }
 
 const state = { ports: [], cfg: null, autostart: false, view: 'dashboard', filter: 'all', search: '', selected: null, selectedPids: new Set() };
+let cfgWritesInFlight = 0;
 
 function visible() {
   return state.ports.filter((p) => {
@@ -64,14 +76,23 @@ async function refresh() {
   const timeout = new Promise((_, r) =>
     setTimeout(() => r(new Error('scan timeout')), 5000)
   );
+  let cfg, autostart, ports;
   try {
-    [state.cfg, state.autostart, state.ports] = await Promise.race([
+    [cfg, autostart, ports] = await Promise.race([
       Promise.all([invoke('get_config'), invoke('get_autostart'), invoke('list_ports')]),
       timeout,
     ]);
   } catch (e) {
     showToast(`refresh: ${esc(String(e))}`);
     return;
+  }
+  // Skip clobbering state.cfg with a stale read while a config write is in flight.
+  if (cfgWritesInFlight === 0) state.cfg = cfg;
+  state.autostart = autostart;
+  state.ports = ports;
+  const livePids = new Set(state.ports.map((p) => p.pid));
+  for (const pid of state.selectedPids) {
+    if (!livePids.has(pid)) state.selectedPids.delete(pid);
   }
   render();
 }
@@ -99,7 +120,7 @@ function renderSidebar() {
   }
 
   const nav = (id, icon, dot, label, count) => `
-    <div class="nav ${state.filter === id ? 'active' : ''}" data-filter="${id}">
+    <div class="nav ${state.filter === id ? 'active' : ''}" data-filter="${id}" role="button" tabindex="0">
       ${icon ? `<i data-lucide="${icon}"></i>` : `<span class="dot" style="background:${dot}"></span>`}
       <span class="label">${label}</span>
       <span class="badge"><span>${count}</span></span>
@@ -112,10 +133,10 @@ function renderSidebar() {
     <div class="sb-div"></div>
     <div class="sb-spacer"></div>
     <div class="sb-div"></div>
-    <div class="sb-toggle ${state.cfg.show_system ? 'on' : ''}" data-toggle="show_system">
+    <div class="sb-toggle ${state.cfg.show_system ? 'on' : ''}" data-toggle="show_system" role="checkbox" aria-checked="${state.cfg.show_system}" tabindex="0">
       <i data-lucide="${state.cfg.show_system ? 'check-square' : 'square'}"></i><span>Mostrar sistema</span>
     </div>
-    <div class="sb-toggle ${state.cfg.show_unknown ? 'on' : ''}" data-toggle="show_unknown">
+    <div class="sb-toggle ${state.cfg.show_unknown ? 'on' : ''}" data-toggle="show_unknown" role="checkbox" aria-checked="${state.cfg.show_unknown}" tabindex="0">
       <i data-lucide="${state.cfg.show_unknown ? 'check-square' : 'square'}"></i><span>Sin clasificar</span>
     </div>`;
   document.querySelectorAll('.nav').forEach((n) => (n.onclick = () => { state.filter = n.dataset.filter; state.view = 'dashboard'; render(); }));
@@ -123,7 +144,7 @@ function renderSidebar() {
     const key = t.dataset.toggle;
     state.cfg[key] = !state.cfg[key];
     try {
-      await cmd('set_config', { cfg: state.cfg });
+      await setConfig(state.cfg);
     } catch (_) {
       state.cfg[key] = !state.cfg[key]; // rollback optimistic update
     }
@@ -163,7 +184,7 @@ function renderDashboard() {
   const head = `
     <div class="thead">
       <div class="h col-port" style="display:flex;align-items:center;gap:6px">
-        <input type="checkbox" id="check-all" style="cursor:pointer" ${state.selectedPids.size === rows.length && rows.length > 0 ? 'checked' : ''}>
+        <input type="checkbox" id="check-all" aria-label="Seleccionar todos los puertos" style="cursor:pointer" ${state.selectedPids.size === rows.length && rows.length > 0 ? 'checked' : ''}>
         PUERTO
       </div>
       <div class="h col-app">APLICACIÓN</div>
@@ -181,9 +202,9 @@ function renderDashboard() {
   const abtn = (cls, icon) =>
     `<button class="abtn ${cls}" data-act="${cls}" title="${ABTN_TITLES[cls] || cls}"><i data-lucide="${icon}"></i></button>`;
   const body = rows.map((p) => `
-    <div class="row" data-port="${p.port}" data-pid="${p.pid}">
+    <div class="row" data-port="${p.port}" data-pid="${p.pid}" role="button" tabindex="0">
       <div class="col-port" style="display:flex;align-items:center;gap:6px">
-        <input type="checkbox" class="row-check" data-pid="${p.pid}" style="cursor:pointer;flex-shrink:0" ${state.selectedPids.has(p.pid) ? 'checked' : ''} onclick="event.stopPropagation()">
+        <input type="checkbox" class="row-check" data-pid="${p.pid}" aria-label="Seleccionar puerto ${p.port}" style="cursor:pointer;flex-shrink:0" ${state.selectedPids.has(p.pid) ? 'checked' : ''} onclick="event.stopPropagation()">
         <span class="dot" style="background:${dotColor(p.kind)}"></span>
         <span class="pn">:${p.port}</span>
       </div>
@@ -253,9 +274,9 @@ function bindRows() {
       btn.onclick = async (e) => {
         e.stopPropagation();
         const act = btn.dataset.act;
-        if (act === 'open') invoke('open_url', { port });
-        else if (act === 'copy') invoke('copy_url', { port });
-        else if (act === 'folder') p && p.project_path && invoke('open_folder', { path: p.project_path });
+        if (act === 'open') cmd('open_url', { port }).catch(() => {});
+        else if (act === 'copy') cmd('copy_url', { port }).catch(() => {});
+        else if (act === 'folder') p && p.project_path && cmd('open_folder', { path: p.project_path }).catch(() => {});
         else if (act === 'restart') {
           try { await cmd('restart_port', { pid }); setTimeout(refresh, 600); } catch (_) {}
         } else if (act === 'kill') {
@@ -265,13 +286,13 @@ function bindRows() {
     });
     row.onclick = (e) => {
       if (e.target.classList.contains('row-check') || e.target.closest('.abtn')) return;
-      state.selected = port; state.view = 'inspector'; render();
+      state.selected = { pid, port }; state.view = 'inspector'; render();
     };
   });
 }
 
 function renderInspector() {
-  const p = state.ports.find((x) => x.port === state.selected);
+  const p = state.selected && state.ports.find((x) => x.pid === state.selected.pid && x.port === state.selected.port);
   const c = document.getElementById('content');
   if (!p) { state.view = 'dashboard'; renderDashboard(); return; }
   const field = (l, v, mono) => `
@@ -493,7 +514,7 @@ function renderHeaders(headers) {
 function renderSettings() {
   const c = document.getElementById('content');
   const cfg = state.cfg;
-  const sw = (key, on) => `<div class="switch ${on ? 'on' : ''}" data-sw="${key}"></div>`;
+  const sw = (key, on) => `<div class="switch ${on ? 'on' : ''}" data-sw="${key}" role="switch" aria-checked="${on}" tabindex="0"></div>`;
   const row = (label, desc, control) => `
     <div class="set-row"><div class="meta"><div class="l">${label}</div><div class="d">${desc}</div></div>${control}</div>`;
   c.innerHTML = `
@@ -525,7 +546,7 @@ function renderSettings() {
     } else {
       cfg[key] = !cfg[key];
       try {
-        await cmd('set_config', { cfg });
+        await setConfig(cfg);
         if (key === 'show_system' || key === 'show_unknown') {
           state.view = 'dashboard';
         }
@@ -536,7 +557,7 @@ function renderSettings() {
     render();
   }));
   const save = async () => {
-    try { await cmd('set_config', { cfg: state.cfg }); } catch (_) {}
+    try { await setConfig(state.cfg); } catch (_) {}
   };
   const poll = document.getElementById('poll');
   poll.onchange = () => { cfg.poll_interval_secs = Math.max(1, Number(poll.value) || 3); save(); };
@@ -546,6 +567,15 @@ function renderSettings() {
   const reserved = document.getElementById('reserved');
   reserved.onchange = () => { cfg.reserved_ports = parsePorts(reserved.value); save(); };
 }
+
+// Make role="button"/role="checkbox"/role="switch" divs keyboard-operable (Enter/Space).
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const el = e.target.closest('[role="button"], [role="checkbox"], [role="switch"]');
+  if (!el) return;
+  e.preventDefault();
+  el.click();
+});
 
 document.querySelector('.logo').onclick = document.querySelector('.app-name').onclick = () => { state.view = 'dashboard'; state.filter = 'all'; render(); };
 document.getElementById('search').oninput = (e) => { state.search = e.target.value; if (state.view === 'dashboard') renderDashboard(), icons(); };
